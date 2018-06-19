@@ -1,0 +1,4 @@
+bin/*
+vendor/*
+components/*
+composer.lock

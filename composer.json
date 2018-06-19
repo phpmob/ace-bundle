@@ -1,0 +1,24 @@
+{
+  "name": "phpmob/ace-bundle",
+  "type": "symfony-bundle",
+  "description": "Ace editor for Symfony Form.",
+  "keywords": ["ace", "code", "editor", "symfony", "form"],
+  "license": "MIT",
+  "require": {
+    "php": "^7.1",
+    "twig/twig": "^2.0",
+    "symfony/framework-bundle": "^4.1",
+    "symfony/form": "^4.1",
+    "symfony/twig-bridge": "^4.1",
+    "symfony/asset": "^4.1",
+    "symfony/console": "^4.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^5.7"
+  },
+  "autoload": {
+    "psr-4": {
+      "PhpMob\\AceBundle\\": "src"
+    }
+  }
+}
