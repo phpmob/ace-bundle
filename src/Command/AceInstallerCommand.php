@@ -37,7 +37,7 @@ class AceInstallerCommand extends Command
     protected function configure()
     {
         $this
-            ->setName('ace:install')
+            ->setName('phpmob:ace:install')
             ->setDescription('Install ACE')
             ->addArgument('path', InputArgument::OPTIONAL, 'Where to install ACE')
             ->addOption(
