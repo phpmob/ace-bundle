@@ -20,5 +20,14 @@
     "psr-4": {
       "PhpMob\\AceBundle\\": "src"
     }
+  },
+  "config": {
+    "sort-packages": true,
+    "bin-dir": "bin"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.2-dev"
+    }
   }
 }
