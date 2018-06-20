@@ -41,8 +41,16 @@ class AceType extends AbstractType
      */
     private $jsPath = 'bundles/phpmobace/acemin/ace.js';
 
+    /**
+     * @var bool
+     */
+    private static $jsRendered = false;
+
+    /**
+     * @var Packages
+     */
     private $assets;
-    
+
     /**
      * @var ConfigManagerInterface
      */
@@ -142,7 +150,11 @@ class AceType extends AbstractType
         $builder->setAttribute('async', $options['async']);
         $builder->setAttribute('autoload', $options['autoload']);
         $builder->setAttribute('base_path', $this->assets->getUrl($options['base_path']));
-        $builder->setAttribute('js_path', $this->assets->getUrl($options['js_path']));
+
+        if (false === static::$jsRendered) {
+            $builder->setAttribute('js_path', $this->assets->getUrl($options['js_path']));
+            static::$jsRendered = true;
+        }
 
         $configManager = clone $this->configManager;
         $config = $options['config'];
@@ -155,6 +167,11 @@ class AceType extends AbstractType
         }
 
         $config = $configManager->getConfig($options['config_name']);
+        $config = array_replace_recursive([
+            'theme' => 'ace/theme/tomorrow_night_eighties',
+            'minLines' => 20,
+            'maxLines' => 100,
+        ], $config);
 
         $builder->setAttribute('config', $config);
     }
@@ -195,7 +212,6 @@ class AceType extends AbstractType
                 'config' => [],
                 'plugins' => [],
                 'styles' => [],
-                'templates' => [],
             ])
             ->addAllowedTypes('enable', 'bool')
             ->addAllowedTypes('async', 'bool')
@@ -213,11 +229,16 @@ class AceType extends AbstractType
                 return $value;
             })
             ->setNormalizer('mode', function (Options $options, $value) {
-                if (false === strpos($value, '/')) {
+                if (null !== $value && false === strpos($value, '/')) {
                     $value = 'ace/mode/' . $value;
                 }
 
-                $options['config']['mode'] = $value;
+                return $value;
+            })
+            ->setNormalizer('config', function (Options $options, $value) {
+                if (empty($value['mode'])) {
+                    $value['mode'] = $options['mode'];
+                }
 
                 return $value;
             });

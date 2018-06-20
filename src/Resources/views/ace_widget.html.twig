@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block _ace_javascript %}
-    {% if autoload %}
+    {% if autoload and js_path %}
         <script type="text/javascript">
             var ACE_BASEPATH = "{{ base_path }}";
         </script>
@@ -22,7 +22,7 @@
     <script type="text/javascript">
         (function () {
             {% block ace_widget_extra %}{% endblock ace_widget_extra %}
-            ace.editor({{ 'id' }}, {{ config|json_encode }});
+            ace.edit('{{ id }}', {{ config|json_encode|raw }});
         })();
     </script>
 {% endblock %}
