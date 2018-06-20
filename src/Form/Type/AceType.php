@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMob\AceBundle\Form\Type;
 
+use PhpMob\AceBundle\Config\ConfigManagerInterface;
+use Symfony\Component\Asset\Packages;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -37,7 +39,20 @@ class AceType extends AbstractType
     /**
      * @var string
      */
-    private $jsPath = 'bundles/phpmobace/src-min-noconflict/ace.js';
+    private $jsPath = 'bundles/phpmobace/acemin/ace.js';
+
+    private $assets;
+    
+    /**
+     * @var ConfigManagerInterface
+     */
+    private $configManager;
+
+    public function __construct(Packages $assets, ConfigManagerInterface $configManager)
+    {
+        $this->assets = $assets;
+        $this->configManager = $configManager;
+    }
 
     /**
      * @param bool|null $enable
@@ -47,7 +62,7 @@ class AceType extends AbstractType
     public function isEnable($enable = null)
     {
         if (null !== $enable) {
-            $this->enable = (bool) $enable;
+            $this->enable = (bool)$enable;
         }
 
         return $this->enable;
@@ -61,7 +76,7 @@ class AceType extends AbstractType
     public function isAsync($async = null)
     {
         if (null !== $async) {
-            $this->async = (bool) $async;
+            $this->async = (bool)$async;
         }
 
         return $this->async;
@@ -75,7 +90,7 @@ class AceType extends AbstractType
     public function isAutoload($autoload = null)
     {
         if (null !== $autoload) {
-            $this->autoload = (bool) $autoload;
+            $this->autoload = (bool)$autoload;
         }
 
         return $this->autoload;
@@ -126,14 +141,20 @@ class AceType extends AbstractType
 
         $builder->setAttribute('async', $options['async']);
         $builder->setAttribute('autoload', $options['autoload']);
-        $builder->setAttribute('base_path', $options['base_path']);
-        $builder->setAttribute('js_path', $options['js_path']);
+        $builder->setAttribute('base_path', $this->assets->getUrl($options['base_path']));
+        $builder->setAttribute('js_path', $this->assets->getUrl($options['js_path']));
 
+        $configManager = clone $this->configManager;
         $config = $options['config'];
 
         if (null === $options['config_name']) {
-            $options['config_name'] = uniqid('fos', true);
+            $options['config_name'] = uniqid('ace', true);
+            $configManager->setConfig($options['config_name'], $config);
+        } else {
+            $configManager->mergeConfig($options['config_name'], $config);
         }
+
+        $config = $configManager->getConfig($options['config_name']);
 
         $builder->setAttribute('config', $config);
     }
@@ -169,6 +190,8 @@ class AceType extends AbstractType
                 'autoload' => $this->autoload,
                 'base_path' => $this->basePath,
                 'js_path' => $this->jsPath,
+                'mode' => null,
+                'config_name' => $this->configManager->getDefaultConfig(),
                 'config' => [],
                 'plugins' => [],
                 'styles' => [],
@@ -180,10 +203,21 @@ class AceType extends AbstractType
             ->addAllowedTypes('base_path', 'string')
             ->addAllowedTypes('js_path', 'string')
             ->addAllowedTypes('config', 'array')
+            ->addAllowedTypes('config_name', ['string', 'null'])
+            ->addAllowedTypes('mode', ['string', 'null'])
             ->setNormalizer('base_path', function (Options $options, $value) {
                 if ('/' !== substr($value, -1)) {
                     $value .= '/';
                 }
+
+                return $value;
+            })
+            ->setNormalizer('mode', function (Options $options, $value) {
+                if (false === strpos($value, '/')) {
+                    $value = 'ace/mode/' . $value;
+                }
+
+                $options['config']['mode'] = $value;
 
                 return $value;
             });

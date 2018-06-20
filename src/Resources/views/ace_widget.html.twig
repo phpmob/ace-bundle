@@ -1,0 +1,28 @@
+{% block ace_widget %}
+    <textarea {{ block('widget_attributes') }}>{{ value }}</textarea>
+
+    {% if enable and not async %}
+        {{ block('_ace_javascript') }}
+    {% endif %}
+{% endblock %}
+
+{% block ace_javascript %}
+    {% if enable and async %}
+        {{ block('_ace_javascript') }}
+    {% endif %}
+{% endblock %}
+
+{% block _ace_javascript %}
+    {% if autoload %}
+        <script type="text/javascript">
+            var ACE_BASEPATH = "{{ base_path }}";
+        </script>
+        <script type="text/javascript" src="{{ js_path }}"></script>
+    {% endif %}
+    <script type="text/javascript">
+        (function () {
+            {% block ace_widget_extra %}{% endblock ace_widget_extra %}
+            ace.editor({{ 'id' }}, {{ config|json_encode }});
+        })();
+    </script>
+{% endblock %}

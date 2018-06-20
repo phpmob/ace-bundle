@@ -36,6 +36,8 @@ class PhpMobAceExtension extends Extension
         $config = $this->processConfiguration(new Configuration(), $configs);
         $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
 
+        $container->setParameter('phpmob.ace.configs', $config['configs']);
+
         $loader->load('services.xml');
     }
 }

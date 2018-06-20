@@ -40,12 +40,6 @@ class AceInstallerCommand extends Command
             ->setName('phpmob:ace:install')
             ->setDescription('Install ACE')
             ->addArgument('path', InputArgument::OPTIONAL, 'Where to install ACE')
-            ->addOption(
-                'release',
-                null,
-                InputOption::VALUE_OPTIONAL,
-                'ACE release (basic, standard or full)'
-            )
             ->addOption('tag', null, InputOption::VALUE_OPTIONAL, 'ACE tag (x.y.z or latest)')
             ->addOption(
                 'clear',
@@ -68,10 +62,6 @@ The <info>%command.name%</info> command install ACE in your application:
 You can install it at a specific path (absolute):
 
   <info>php %command.full_name% path</info>
-  
-You can install a specific release (basic, standard or full):
-
-  <info>php %command.full_name% --release=full</info>
   
 You can install a specific version:
 
@@ -119,10 +109,6 @@ EOF
 
         if ($input->hasArgument('path')) {
             $options['path'] = $input->getArgument('path');
-        }
-
-        if ($input->hasOption('release')) {
-            $options['release'] = $input->getOption('release');
         }
 
         if ($input->hasOption('tag')) {

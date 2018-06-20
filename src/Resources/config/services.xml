@@ -6,11 +6,18 @@
 
     <services>
         <service id="phpmob.command.ace_installer" class="PhpMob\AceBundle\Command\AceInstallerCommand">
-            <argument type="service" id="fos_ck_editor.installer" />
-            <tag name="console.command" command="phpmob:ckeditor:install" />
+            <argument type="service" id="phpmob.ace_installer"/>
+            <tag name="console.command" command="phpmob:ace:install"/>
         </service>
+        <service id="phpmob.ace_installer" class="PhpMob\AceBundle\Installer\AceInstaller"/>
         <service id="phpmob.form.ace_type" class="PhpMob\AceBundle\Form\Type\AceType">
             <tag name="form.type"/>
+            <argument type="service" id="assets.packages"/>
+            <argument type="service">
+                <service id="phpmob.ace_config_manager" class="PhpMob\AceBundle\Config\ConfigManager">
+                    <argument>%phpmob.ace.configs%</argument>
+                </service>
+            </argument>
         </service>
     </services>
 </container>

@@ -26,6 +26,16 @@ class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('phpmob_ace');
 
+        $rootNode
+            ->children()
+                ->arrayNode('configs')
+                    ->normalizeKeys(false)
+                    ->useAttributeAsKey('name')
+                    ->prototype('variable')->end()
+                ->end()
+            ->end()
+        ;
+
         return $treeBuilder;
     }
 }

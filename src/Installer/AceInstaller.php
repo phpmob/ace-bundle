@@ -9,13 +9,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class AceInstaller
 {
-    const RELEASE_BASIC = 'basic';
-
-    const RELEASE_FULL = 'full';
-
-    const RELEASE_STANDARD = 'standard';
-
-    const VERSION_LATEST = 'latest';
+    const VERSION_LATEST = '1.3.3';
 
     const CLEAR_DROP = 'drop';
 
@@ -54,7 +48,7 @@ class AceInstaller
     /**
      * @var string
      */
-    private static $archive = 'https://github.com/ajaxorg/ace-builds/archive/%s/%s.zip';
+    private static $archive = 'https://github.com/ajaxorg/ace-builds/archive/v%s.zip';
 
     /**
      * @var OptionsResolver
@@ -69,10 +63,9 @@ class AceInstaller
         $this->resolver = (new OptionsResolver())
             ->setDefaults(array_merge([
                 'clear' => null,
-                'excludes' => ['samples'],
+                'excludes' => [],
                 'notifier' => null,
-                'path' => dirname(__DIR__).'/Resources/public',
-                'release' => self::RELEASE_FULL,
+                'path' => dirname(__DIR__) . '/Resources/public',
                 'version' => self::VERSION_LATEST,
             ], $options))
             ->setAllowedTypes('excludes', 'array')
@@ -80,7 +73,6 @@ class AceInstaller
             ->setAllowedTypes('path', 'string')
             ->setAllowedTypes('version', 'string')
             ->setAllowedValues('clear', [self::CLEAR_DROP, self::CLEAR_KEEP, self::CLEAR_SKIP, null])
-            ->setAllowedValues('release', [self::RELEASE_BASIC, self::RELEASE_FULL, self::RELEASE_STANDARD])
             ->setNormalizer('path', function (Options $options, $path) {
                 return rtrim($path, '/');
             });
@@ -111,7 +103,7 @@ class AceInstaller
      */
     private function clear(array $options)
     {
-        if (!file_exists($options['path'].'/src-min-noconflict/ace.js')) {
+        if (!file_exists($options['path'] . '/acemin/ace.js')) {
             return self::CLEAR_DROP;
         }
 
@@ -124,32 +116,7 @@ class AceInstaller
         }
 
         if (self::CLEAR_DROP === $options['clear']) {
-            $files = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($options['path'], \RecursiveDirectoryIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
-            );
-
-            $this->notify($options['notifier'], self::NOTIFY_CLEAR_SIZE, iterator_count($files));
-
-            foreach ($files as $file) {
-                $filePath = $file->getRealPath();
-                $this->notify($options['notifier'], self::NOTIFY_CLEAR_PROGRESS, $filePath);
-
-                if ($dir = $file->isDir()) {
-                    $success = @rmdir($filePath);
-                } else {
-                    $success = @unlink($filePath);
-                }
-
-                if (!$success) {
-                    throw $this->createException(sprintf(
-                        'Unable to remove the %s "%s".',
-                        $dir ? 'directory' : 'file',
-                        $filePath
-                    ));
-                }
-            }
-
+            $this->removeDir($options['path']);
             $this->notify($options['notifier'], self::NOTIFY_CLEAR_COMPLETE);
         }
 
@@ -163,19 +130,19 @@ class AceInstaller
      */
     private function download(array $options)
     {
-        $url = sprintf(self::$archive, $options['release'], $options['version']);
+        $url = sprintf(self::$archive, $options['version']);
         $this->notify($options['notifier'], self::NOTIFY_DOWNLOAD, $url);
 
         $zip = @file_get_contents($url, false, $this->createStreamContext($options['notifier']));
 
         if (false === $zip) {
-            throw $this->createException(sprintf('Unable to download CKEditor ZIP archive from "%s".', $url));
+            throw $this->createException(sprintf('Unable to download ACE ZIP archive from "%s".', $url));
         }
 
-        $path = tempnam(sys_get_temp_dir(), 'ace-'.$options['release'].'-'.$options['version'].'.zip');
+        $path = tempnam(sys_get_temp_dir(), 'ace-' . $options['version'] . '.zip');
 
         if (!@file_put_contents($path, $zip)) {
-            throw $this->createException(sprintf('Unable to write CKEditor ZIP archive to "%s".', $path));
+            throw $this->createException(sprintf('Unable to write ACE ZIP archive to "%s".', $path));
         }
 
         $this->notify($options['notifier'], self::NOTIFY_DOWNLOAD_COMPLETE, $path);
@@ -195,7 +162,7 @@ class AceInstaller
 
         if ($proxy) {
             $context['proxy'] = $proxy;
-            $context['request_fulluri'] = (bool) getenv('https_proxy_request_fulluri') ?:
+            $context['request_fulluri'] = (bool)getenv('https_proxy_request_fulluri') ?:
                 getenv('http_proxy_request_fulluri');
         }
 
@@ -228,7 +195,7 @@ class AceInstaller
     }
 
     /**
-     * @param string  $path
+     * @param string $path
      * @param mixed[] $options
      */
     private function extract($path, array $options)
@@ -240,63 +207,79 @@ class AceInstaller
 
         $this->notify($options['notifier'], self::NOTIFY_EXTRACT_SIZE, $zip->numFiles);
 
-        $offset = 20 + strlen($options['release']) + strlen($options['version']);
+        $zip->extractTo($options['path']);
 
-        for ($i = 0; $i < $zip->numFiles; ++$i) {
-            $this->extractFile(
-                $file = $zip->getNameIndex($i),
-                substr($file, $offset),
-                $path,
-                $options
-            );
-        }
-
+        $src = sprintf('%s/ace-builds-%s/src-min-noconflict', $options['path'], $options['version']);
+        $this->copyDir($src, $options['path'] . '/acemin');
+        $this->removeDir(sprintf('%s/ace-builds-%s', $options['path'], $options['version']));
         $zip->close();
 
         $this->notify($options['notifier'], self::NOTIFY_EXTRACT_COMPLETE);
         $this->notify($options['notifier'], self::NOTIFY_CLEAR_ARCHIVE, $path);
 
         if (!@unlink($path)) {
-            throw $this->createException(sprintf('Unable to remove the CKEditor ZIP archive "%s".', $path));
+            throw $this->createException(sprintf('Unable to remove the ACE ZIP archive "%s".', $path));
         }
     }
 
     /**
-     * @param string  $file
-     * @param string  $rewrite
-     * @param string  $origin
-     * @param mixed[] $options
+     * @param string $src
+     * @param string $dst
      */
-    private function extractFile($file, $rewrite, $origin, array $options)
+    private function copyDir(string $src, string $dst)
     {
-        $this->notify($options['notifier'], self::NOTIFY_EXTRACT_PROGRESS, $rewrite);
-
-        $from = 'zip://'.$origin.'#'.$file;
-        $to = $options['path'].'/'.$rewrite;
-
-        foreach ($options['excludes'] as $exclude) {
-            if (0 === strpos($rewrite, $exclude)) {
-                return;
-            }
-        }
-
-        if ('/' === substr($from, -1)) {
-            if (!is_dir($to) && !@mkdir($to)) {
-                throw $this->createException(sprintf('Unable to create the directory "%s".', $to));
+        if (is_dir($src)) {
+            if (!@mkdir($dst)) {
+                throw $this->createException(sprintf('Unable to make dir for "%s".', $dst));
             }
 
-            return;
-        }
+            $files = scandir($src);
 
-        if (!@copy($from, $to)) {
-            throw $this->createException(sprintf('Unable to extract the file "%s" to "%s".', $file, $to));
+            foreach ($files as $file) {
+                if ($file != "." && $file != "..") {
+                    $this->copyDir("$src/$file", "$dst/$file");
+                }
+            }
+        } else if (file_exists($src)) {
+            if (!@copy($src, $dst)) {
+                throw $this->createException(sprintf('Unable to copy "%s" to "%s".', $src, $dst));
+            }
+        }
+    }
+
+    /**
+     * @param string $path
+     */
+    private function removeDir(string $path)
+    {
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($files as $file) {
+            $filePath = $file->getRealPath();
+
+            if ($dir = $file->isDir()) {
+                $success = @rmdir($filePath);
+            } else {
+                $success = @unlink($filePath);
+            }
+
+            if (!$success) {
+                throw $this->createException(sprintf(
+                    'Unable to remove the %s "%s".',
+                    $dir ? 'directory' : 'file',
+                    $filePath
+                ));
+            }
         }
     }
 
     /**
      * @param callable|null $notifier
-     * @param string        $type
-     * @param mixed         $data
+     * @param string $type
+     * @param mixed $data
      *
      * @return mixed
      */
