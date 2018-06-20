@@ -168,7 +168,7 @@ class AceType extends AbstractType
 
         $config = $configManager->getConfig($options['config_name']);
         $config = array_replace_recursive([
-            'theme' => 'ace/theme/tomorrow_night_eighties',
+            'theme' => 'ace/theme/xcode',
             'minLines' => 20,
             'maxLines' => 100,
         ], $config);
