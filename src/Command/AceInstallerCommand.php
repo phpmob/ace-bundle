@@ -65,7 +65,7 @@ You can install it at a specific path (absolute):
   
 You can install a specific version:
 
-  <info>php %command.full_name% --tag=4.7.0</info>
+  <info>php %command.full_name% --tag=1.3.3</info>
 
 If there is a previous ACE installation detected, 
 you can control how it should be handled in non-interactive mode:
