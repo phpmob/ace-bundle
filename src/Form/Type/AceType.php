@@ -173,6 +173,9 @@ class AceType extends AbstractType
             'maxLines' => 100,
         ], $config);
 
+        $config['mode']  = $this->normalizeMode($config['mode'] ?? null);
+        $config['theme'] = $this->normalizeTheme($config['theme'] ?? null);
+
         $builder->setAttribute('config', $config);
     }
 
@@ -271,7 +274,7 @@ class AceType extends AbstractType
     /**
      * @param string $mode
      *
-     * @return string
+     * @return string|null
      */
     protected function normalizeMode($mode)
     {
@@ -280,5 +283,19 @@ class AceType extends AbstractType
         }
 
         return $mode;
+    }
+
+    /**
+     * @param string $theme
+     *
+     * @return string|null
+     */
+    protected function normalizeTheme($theme)
+    {
+        if (null !== $theme && false === strpos($theme, '/')) {
+            $theme = 'ace/theme/' . $theme;
+        }
+
+        return $theme;
     }
 }
