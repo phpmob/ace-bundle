@@ -1,6 +1,6 @@
 {% block ace_widget %}
-    <textarea {{ block('widget_attributes') }}>{{ value }}</textarea>
-
+    <textarea {{ block('widget_attributes') }} style="visibility: hidden; width: 0; height: 0; position: absolute;">{{ value }}</textarea>
+    <div id="{{ id }}-ace"></div>
     {% if enable and not async %}
         {{ block('_ace_javascript') }}
     {% endif %}
@@ -22,7 +22,12 @@
     <script type="text/javascript">
         (function () {
             {% block ace_widget_extra %}{% endblock ace_widget_extra %}
-            ace.edit('{{ id }}', {{ config|json_encode|raw }});
+            var el = document.getElementById('{{ id }}');
+            var editor = ace.edit('{{ id }}-ace', {{ config|json_encode|raw }});
+            editor.getSession().on('change', function () {
+                el.value = editor.getSession().getValue();
+                el.setAttribute('data-ace-editor', editor);
+            });
         })();
     </script>
 {% endblock %}
