@@ -173,6 +173,9 @@ class AceType extends AbstractType
             'maxLines' => 100,
         ], $config);
 
+        $config['mode']  = $this->normalizeMode($config['mode'] ?? null);
+        $config['theme'] = $this->normalizeTheme($config['theme'] ?? null);
+
         $builder->setAttribute('config', $config);
     }
 
@@ -229,15 +232,15 @@ class AceType extends AbstractType
                 return $value;
             })
             ->setNormalizer('mode', function (Options $options, $value) {
-                if (null !== $value && false === strpos($value, '/')) {
-                    $value = 'ace/mode/' . $value;
-                }
-
-                return $value;
+                return $this->normalizeMode($value);
             })
             ->setNormalizer('config', function (Options $options, $value) {
-                if (empty($value['mode'])) {
-                    $value['mode'] = $options['mode'];
+                $optionsMode = $this->normalizeMode($options['mode']);
+
+                if (!empty($value['mode'])) {
+                    $value['mode'] = $this->normalizeMode($value['mode']);
+                } elseif ($optionsMode !== null) {
+                    $value['mode'] = $optionsMode;
                 }
 
                 return $value;
@@ -266,5 +269,33 @@ class AceType extends AbstractType
     public function getBlockPrefix()
     {
         return 'ace';
+    }
+
+    /**
+     * @param string $mode
+     *
+     * @return string|null
+     */
+    protected function normalizeMode($mode)
+    {
+        if (null !== $mode && false === strpos($mode, '/')) {
+            $mode = 'ace/mode/' . $mode;
+        }
+
+        return $mode;
+    }
+
+    /**
+     * @param string $theme
+     *
+     * @return string|null
+     */
+    protected function normalizeTheme($theme)
+    {
+        if (null !== $theme && false === strpos($theme, '/')) {
+            $theme = 'ace/theme/' . $theme;
+        }
+
+        return $theme;
     }
 }
