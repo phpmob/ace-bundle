@@ -1,6 +1,6 @@
 {% block ace_widget %}
     <textarea {{ block('widget_attributes') }} style="visibility: hidden; width: 0; height: 0; position: absolute;">{{ value }}</textarea>
-    <div id="{{ id }}-ace"></div>
+    <div id="{{ id }}-ace">{{ value }}</div>
     {% if enable and not async %}
         {{ block('_ace_javascript') }}
     {% endif %}
